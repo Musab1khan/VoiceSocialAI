@@ -1,0 +1,10 @@
+Flask
+Flask-SQLAlchemy
+pyttsx3
+APScheduler
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client
+google-genai
+tzlocal
