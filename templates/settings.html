@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+
+{% block title %}AI Voice Assistant - Settings{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {% if error %}
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+    </div>
+    {% endif %}
+
+    <!-- Voice Settings -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-volume-up me-2"></i>Voice Settings</h5>
+                </div>
+                <div class="card-body">
+                    {% if voice_info %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Current Voice:</strong></label>
+                                <p class="form-control-plaintext">{{ voice_info.get('current_voice', 'Default') }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Rate:</strong></label>
+                                <p class="form-control-plaintext">{{ voice_info.get('rate', 'Default') }} WPM</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Volume:</strong></label>
+                                <p class="form-control-plaintext">{{ voice_info.get('volume', 'Default') }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Available Voices:</strong></label>
+                                <p class="form-control-plaintext">{{ voice_info.get('voice_count', 'Unknown') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Voice system information unavailable. This may be due to missing system dependencies.
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" onclick="testVoiceSystem()">
+                            <i class="fas fa-play me-2"></i>Test Voice
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="refreshVoiceInfo()">
+                            <i class="fas fa-sync me-2"></i>Refresh Info
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>System Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Status:</strong></label>
+                        <p class="form-control-plaintext">
+                            <span class="badge bg-success">Online</span>
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Database:</strong></label>
+                        <p class="form-control-plaintext">
+                            <span class="badge bg-success">Connected</span>
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Services:</strong></label>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check-circle text-success me-2"></i>Background Tasks</li>
+                            <li><i class="fas fa-check-circle text-success me-2"></i>Auto-Reply Monitor</li>
+                            <li><i class="fas fa-volume-up text-info me-2"></i>Voice System</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Configuration -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-key me-2"></i>API Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Important:</strong> API keys are securely stored as environment variables. Enter your keys below to enable all features.
+                    </div>
+                    
+                    <form id="apiConfigForm">
+                        <!-- AI Services -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card border-primary mb-3">
+                                    <div class="card-header bg-primary text-white">
+                                        <i class="fas fa-robot me-2"></i>AI Services (Text & Chat)
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-info mb-3">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>Free APIs Available!</strong> Use these alternatives if you don't have premium API keys.
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="geminiApiKey" class="form-label">
+                                                <i class="fab fa-google me-2 text-primary"></i>Google Gemini API Key
+                                            </label>
+                                            <input type="password" class="form-control" id="geminiApiKey" name="gemini_api_key" 
+                                                   placeholder="AIza..." {% if api_keys.get('GEMINI_API_KEY') %}value="{{ '*' * 20 }}"{% endif %}>
+                                            <div class="form-text">Google's AI model for text generation</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="huggingfaceApiKey" class="form-label">
+                                                <i class="fas fa-heart me-2 text-warning"></i>🤗 Hugging Face API Key (FREE)
+                                            </label>
+                                            <input type="password" class="form-control" id="huggingfaceApiKey" name="huggingface_api_key" 
+                                                   placeholder="hf_..." {% if api_keys.get('HUGGINGFACE_API_KEY') %}value="{{ '*' * 20 }}"{% endif %}>
+                                            <div class="form-text">Free access to thousands of AI models • <a href="https://huggingface.co/settings/tokens" target="_blank">Get Free API Key</a></div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="aimlApiKey" class="form-label">
+                                                <i class="fas fa-lightning-bolt me-2 text-warning"></i>AIML API Key (FREE)
+                                            </label>
+                                            <input type="password" class="form-control" id="aimlApiKey" name="aiml_api_key" 
+                                                   placeholder="..." {% if api_keys.get('AIML_API_KEY') %}value="{{ '*' * 20 }}"{% endif %}>
+                                            <div class="form-text">Free access to GPT, Claude, Gemini & more • <a href="https://aimlapi.com" target="_blank">Get Free API Key</a></div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="openaiApiKey" class="form-label">
+                                                <i class="fas fa-brain me-2 text-success"></i>OpenAI API Key
+                                            </label>
+                                            <input type="password" class="form-control" id="openaiApiKey" name="openai_api_key" 
+                                                   placeholder="sk-..." {% if api_keys.get('OPENAI_API_KEY') %}value="{{ '*' * 20 }}"{% endif %}>
+                                            <div class="form-text">Premium AI service (requires payment after free tier)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Image Generation APIs -->
+                                <div class="card border-success mb-3">
+                                    <div class="card-header bg-success text-white">
+                                        <i class="fas fa-image me-2"></i>AI Image Generation
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="deepaiApiKey" class="form-label">
+                                                <i class="fas fa-paint-brush me-2 text-info"></i>DeepAI API Key (FREE)
+                                            </label>
+                                            <input type="password" class="form-control" id="deepaiApiKey" name="deepai_api_key" 
+                                                   placeholder="..." {% if api_keys.get('DEEPAI_API_KEY') %}value="{{ '*' * 20 }}"{% endif %}>
+                                            <div class="form-text">Free image generation API • <a href="https://deepai.org/machine-learning-model/text2img" target="_blank">Get Free API Key</a></div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="replicateApiKey" class="form-label">
+                                                <i class="fas fa-copy me-2 text-primary"></i>Replicate API Key (FREE TIER)
+                                            </label>
+                                            <input type="password" class="form-control" id="replicateApiKey" name="replicate_api_key" 
+                                                   placeholder="r8_..." {% if api_keys.get('REPLICATE_API_KEY') %}value="{{ '*' * 20 }}"{% endif %}>
+                                            <div class="form-text">FLUX, Stable Diffusion models • <a href="https://replicate.com" target="_blank">Get API Key</a></div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="stabilityApiKey" class="form-label">
+                                                <i class="fas fa-magic me-2 text-secondary"></i>Stability AI API Key
+                                            </label>
+                                            <input type="password" class="form-control" id="stabilityApiKey" name="stability_api_key" 
+                                                   placeholder="sk-..." {% if api_keys.get('STABILITY_API_KEY') %}value="{{ '*' * 20 }}"{% endif %}>
+                                            <div class="form-text">Stable Diffusion official API</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Text-to-Speech APIs -->
+                                <div class="card border-warning mb-3">
+                                    <div class="card-header bg-warning text-dark">
+                                        <i class="fas fa-volume-up me-2"></i>Text-to-Speech APIs
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-success mb-3">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            <strong>eSpeak-ng is already working!</strong> Additional TTS options for better voice quality.
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="elevenLabsApiKey" class="form-label">
+                                                <i class="fas fa-microphone me-2 text-primary"></i>ElevenLabs API Key (FREE TIER)
+                                            </label>
+                                            <input type="password" class="form-control" id="elevenLabsApiKey" name="elevenlabs_api_key" 
+                                                   placeholder="..." {% if api_keys.get('ELEVENLABS_API_KEY') %}value="{{ '*' * 20 }}"{% endif %}>
+                                            <div class="form-text">High-quality voice synthesis • <a href="https://elevenlabs.io" target="_blank">Get Free API Key</a></div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="assemblyAiApiKey" class="form-label">
+                                                <i class="fas fa-headphones me-2 text-info"></i>AssemblyAI API Key (FREE TIER)
+                                            </label>
+                                            <input type="password" class="form-control" id="assemblyAiApiKey" name="assembly_api_key" 
+                                                   placeholder="..." {% if api_keys.get('ASSEMBLY_API_KEY') %}value="{{ '*' * 20 }}"{% endif %}>
+                                            <div class="form-text">Speech recognition & synthesis • <a href="https://assemblyai.com" target="_blank">Get Free API Key</a></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Social Media -->
+                            <div class="col-md-6">
+                                <div class="card border-info mb-3">
+                                    <div class="card-header bg-info text-white">
+                                        <i class="fab fa-facebook me-2"></i>Social Media
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="facebookAccessToken" class="form-label">
+                                                <i class="fab fa-facebook me-2 text-primary"></i>Facebook Access Token
+                                            </label>
+                                            <input type="password" class="form-control" id="facebookAccessToken" name="facebook_access_token" 
+                                                   placeholder="EAAG..." {% if api_keys.get('FACEBOOK_ACCESS_TOKEN') %}value="{{ '*' * 20 }}"{% endif %}>
+                                            <div class="form-text">For posting to Facebook pages</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="facebookPageId" class="form-label">
+                                                <i class="fab fa-facebook me-2 text-primary"></i>Facebook Page ID
+                                            </label>
+                                            <input type="text" class="form-control" id="facebookPageId" name="facebook_page_id" 
+                                                   placeholder="123456789..." value="{{ api_keys.get('FACEBOOK_PAGE_ID', '') }}">
+                                            <div class="form-text">Your Facebook page ID for posting</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Communication Services -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card border-success mb-3">
+                                    <div class="card-header bg-success text-white">
+                                        <i class="fas fa-envelope me-2"></i>Gmail Integration
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="gmailClientId" class="form-label">
+                                                <i class="fab fa-google me-2 text-info"></i>Gmail Client ID
+                                            </label>
+                                            <input type="text" class="form-control" id="gmailClientId" name="gmail_client_id" 
+                                                   placeholder="123456789..." value="{{ api_keys.get('GMAIL_CLIENT_ID', '') }}">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="gmailClientSecret" class="form-label">
+                                                <i class="fab fa-google me-2 text-info"></i>Gmail Client Secret
+                                            </label>
+                                            <input type="password" class="form-control" id="gmailClientSecret" name="gmail_client_secret" 
+                                                   placeholder="GOCSPX-..." {% if api_keys.get('GMAIL_CLIENT_SECRET') %}value="{{ '*' * 20 }}"{% endif %}>
+                                        </div>
+                                        <div class="form-text">For email auto-reply functionality</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card border-warning mb-3">
+                                    <div class="card-header bg-warning text-dark">
+                                        <i class="fab fa-whatsapp me-2"></i>WhatsApp Business
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="whatsappToken" class="form-label">
+                                                <i class="fab fa-whatsapp me-2 text-success"></i>WhatsApp Access Token
+                                            </label>
+                                            <input type="password" class="form-control" id="whatsappToken" name="whatsapp_token" 
+                                                   placeholder="EAAG..." {% if api_keys.get('WHATSAPP_TOKEN') %}value="{{ '*' * 20 }}"{% endif %}>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="whatsappVerifyToken" class="form-label">
+                                                <i class="fab fa-whatsapp me-2 text-success"></i>WhatsApp Verify Token
+                                            </label>
+                                            <input type="text" class="form-control" id="whatsappVerifyToken" name="whatsapp_verify_token" 
+                                                   placeholder="your_verify_token" value="{{ api_keys.get('WHATSAPP_VERIFY_TOKEN', '') }}">
+                                        </div>
+                                        <div class="form-text">For WhatsApp auto-reply messages</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2 justify-content-end">
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">
+                                <i class="fas fa-undo me-2"></i>Reset
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Configuration
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="mt-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6><i class="fas fa-gift me-2 text-success"></i>🎁 FREE API Keys Available:</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="text-success">💬 Text/Chat APIs</h6>
+                                        <ul class="mb-3">
+                                            <li><strong>🤗 Hugging Face:</strong> <a href="https://huggingface.co/settings/tokens" target="_blank">Free API Key</a></li>
+                                            <li><strong>⚡ AIML API:</strong> <a href="https://aimlapi.com" target="_blank">Multiple AI Models Free</a></li>
+                                        </ul>
+                                        
+                                        <h6 class="text-primary">🖼️ Image Generation</h6>
+                                        <ul class="mb-0">
+                                            <li><strong>🎨 DeepAI:</strong> <a href="https://deepai.org/machine-learning-model/text2img" target="_blank">Free Images</a></li>
+                                            <li><strong>📱 Replicate:</strong> <a href="https://replicate.com" target="_blank">FLUX Models</a></li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="text-warning">🔊 Voice/TTS APIs</h6>
+                                        <ul class="mb-3">
+                                            <li><strong>🎤 ElevenLabs:</strong> <a href="https://elevenlabs.io" target="_blank">10k chars/month free</a></li>
+                                            <li><strong>🎙️ AssemblyAI:</strong> <a href="https://assemblyai.com" target="_blank">3 hours/month free</a></li>
+                                        </ul>
+                                        
+                                        <h6 class="text-info">📱 Premium Services</h6>
+                                        <ul class="mb-0">
+                                            <li><strong>Google Gemini:</strong> <a href="https://makersuite.google.com/app/apikey" target="_blank">Get API Key</a></li>
+                                            <li><strong>OpenAI:</strong> <a href="https://platform.openai.com/api-keys" target="_blank">GPT Models</a></li>
+                                            <li><strong>Facebook:</strong> <a href="https://developers.facebook.com/" target="_blank">Social Media</a></li>
+                                            <li><strong>Gmail:</strong> <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="alert alert-success mt-3 mb-0">
+                                    <i class="fas fa-rocket me-2"></i>
+                                    <strong>Quick Start:</strong> Get Hugging Face and DeepAI keys first - they're completely free and work immediately!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Back -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <a href="{{ url_for('main.index') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Voice Control
+            </a>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-tachometer-alt me-2"></i>View Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function testVoiceSystem() {
+    fetch('/test-voice')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Voice Test', 'Voice system is working properly', 'success');
+            } else {
+                showToast('Voice Test Failed', data.error || 'Unknown error', 'error');
+            }
+        })
+        .catch(error => {
+            showToast('Voice Test Failed', 'Network error: ' + error.message, 'error');
+        });
+}
+
+function refreshVoiceInfo() {
+    window.location.reload();
+}
+
+function resetForm() {
+    document.getElementById('apiConfigForm').reset();
+}
+
+// Handle API configuration form submission
+document.getElementById('apiConfigForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const apiData = {};
+    
+    for (let [key, value] of formData.entries()) {
+        if (value.trim()) {
+            apiData[key] = value;
+        }
+    }
+    
+    fetch('/api/update-config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Configuration Saved', 'API keys have been updated successfully', 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } else {
+            showToast('Configuration Failed', data.error || 'Failed to save configuration', 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Configuration Failed', 'Network error: ' + error.message, 'error');
+    });
+});
+
+function showToast(title, message, type = 'info') {
+    // Simple toast implementation
+    const toastContainer = document.createElement('div');
+    toastContainer.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} position-fixed top-0 end-0 m-3`;
+    toastContainer.style.zIndex = '9999';
+    toastContainer.innerHTML = `<strong>${title}:</strong> ${message}`;
+    
+    document.body.appendChild(toastContainer);
+    
+    setTimeout(() => {
+        toastContainer.remove();
+    }, 5000);
+}
+</script>
+{% endblock %}

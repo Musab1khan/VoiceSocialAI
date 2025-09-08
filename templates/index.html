@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}AI Voice Assistant - Home{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Voice Control Section -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg">
+                <div class="card-header text-center">
+                    <h2><i class="fas fa-microphone me-2"></i>Voice Control Center</h2>
+                    <p class="mb-0">Speak your commands to control your digital assistant</p>
+                </div>
+                <div class="card-body text-center">
+                    <!-- Voice Status Indicator -->
+                    <div id="voiceStatus" class="mb-4">
+                        <div id="voiceIndicator" class="voice-indicator mx-auto mb-3">
+                            <i class="fas fa-microphone fa-3x"></i>
+                        </div>
+                        <h5 id="statusText">Click to start listening</h5>
+                        <p id="statusDescription" class="text-muted">Press the microphone to give voice commands</p>
+                    </div>
+
+                    <!-- Voice Control Buttons -->
+                    <div class="d-flex justify-content-center gap-3 mb-4">
+                        <button id="startListening" class="btn btn-primary btn-lg">
+                            <i class="fas fa-play me-2"></i>Start Listening
+                        </button>
+                        <button id="stopListening" class="btn btn-secondary btn-lg" disabled>
+                            <i class="fas fa-stop me-2"></i>Stop Listening
+                        </button>
+                        <button id="testVoice" class="btn btn-outline-info">
+                            <i class="fas fa-volume-up me-2"></i>Test Voice
+                        </button>
+                    </div>
+
+                    <!-- Current Command Display -->
+                    <div id="currentCommand" class="alert alert-info d-none">
+                        <h6><i class="fas fa-comments me-2"></i>You said:</h6>
+                        <p id="commandText" class="mb-0"></p>
+                    </div>
+
+                    <!-- Processing Status -->
+                    <div id="processingStatus" class="d-none">
+                        <div class="spinner-border text-primary me-2" role="status">
+                            <span class="visually-hidden">Processing...</span>
+                        </div>
+                        <span>Processing your command...</span>
+                    </div>
+
+                    <!-- Response Display -->
+                    <div id="responseDisplay" class="alert alert-success d-none">
+                        <h6><i class="fas fa-robot me-2"></i>Assistant Response:</h6>
+                        <p id="responseText" class="mb-0"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="row mt-4">
+        <div class="col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fab fa-facebook fa-3x text-primary mb-3"></i>
+                    <h5>Facebook Posts</h5>
+                    <p class="text-muted">Create engaging posts with AI-generated content and images</p>
+                    <button class="btn btn-outline-primary" onclick="quickCommand('create a facebook post about technology')">
+                        Quick Post
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-envelope fa-3x text-success mb-3"></i>
+                    <h5>Auto Replies</h5>
+                    <p class="text-muted">Intelligent auto-responses for emails and WhatsApp messages</p>
+                    <button class="btn btn-outline-success" onclick="quickCommand('check auto reply status')">
+                        Check Status
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-image fa-3x text-warning mb-3"></i>
+                    <h5>AI Images</h5>
+                    <p class="text-muted">Generate stunning images using AI for any purpose</p>
+                    <button class="btn btn-outline-warning" onclick="quickCommand('generate an image of a beautiful sunset')">
+                        Generate Image
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-history me-2"></i>Recent Commands</h5>
+                </div>
+                <div class="card-body">
+                    <div id="recentCommands">
+                        <p class="text-muted">No recent commands. Start by giving a voice command!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/voice-control.js') }}"></script>
+<script>
+    // Quick command function
+    function quickCommand(command) {
+        if (window.voiceController) {
+            window.voiceController.processCommand(command);
+        }
+    }
+
+    // Load recent commands on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadRecentCommands();
+    });
+
+    function loadRecentCommands() {
+        fetch('/api/command-history?per_page=5')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.commands.length > 0) {
+                    const container = document.getElementById('recentCommands');
+                    container.innerHTML = data.commands.map(cmd => `
+                        <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                            <div>
+                                <strong>${cmd.command_text}</strong>
+                                <small class="text-muted d-block">${new Date(cmd.created_at).toLocaleString()}</small>
+                            </div>
+                            <span class="badge bg-${cmd.status === 'completed' ? 'success' : cmd.status === 'failed' ? 'danger' : 'warning'}">
+                                ${cmd.status}
+                            </span>
+                        </div>
+                    `).join('');
+                }
+            })
+            .catch(error => console.error('Error loading recent commands:', error));
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,914 @@
+{% extends "base.html" %}
+
+{% block title %}AI Assistant Chat{% endblock %}
+
+{% block content %}
+<div class="container-fluid h-100" style="max-width: 1200px;">
+    <div class="row h-100">
+        <!-- Main Chat Interface -->
+        <div class="col-12">
+            <div class="card h-100 d-flex flex-column bg-dark border-secondary">
+                <!-- Chat Header -->
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-robot fa-2x me-3"></i>
+                            <div>
+                                <h4 class="mb-0">AI Assistant</h4>
+                                <small>Multilingual AI with file & camera support</small>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <span id="provider-status" class="badge bg-success">
+                                <i class="fas fa-circle me-1"></i>Online
+                            </span>
+                            <button class="btn btn-sm btn-outline-light" onclick="clearChat()">
+                                <i class="fas fa-trash me-1"></i>Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Messages Area -->
+                <div class="card-body flex-grow-1 d-flex flex-column p-0">
+                    <div id="chat-messages" class="flex-grow-1 overflow-auto p-3" style="max-height: calc(100vh - 300px);">
+                        <!-- Welcome Message -->
+                        <div class="message-bubble assistant-message">
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <i class="fas fa-robot me-2"></i>
+                                    <strong>AI Assistant</strong>
+                                    <small class="text-muted ms-auto" id="welcome-time"></small>
+                                </div>
+                                <div class="message-text">
+                                    <h5>👋 Welcome! I'm your AI Assistant</h5>
+                                    <p>I can help you with:</p>
+                                    <ul class="mb-0">
+                                        <li>🗣️ <strong>Voice & Text Chat</strong> - Speak or type in any language</li>
+                                        <li>📄 <strong>File Analysis</strong> - Upload PDFs, Word docs, Excel, images</li>
+                                        <li>📷 <strong>Camera Capture</strong> - Take photos for analysis with OpenCV</li>
+                                        <li>✍️ <strong>Content Creation</strong> - Write blogs, posts, emails, stories</li>
+                                        <li>🎨 <strong>Image Generation</strong> - Create images from text descriptions</li>
+                                        <li>📱 <strong>Social Media</strong> - Auto-post to Facebook with AI content</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- File Upload Area -->
+                    <div id="file-upload-area" class="d-none border-top bg-secondary p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0"><i class="fas fa-paperclip me-2"></i>File Attachments</h6>
+                            <button class="btn btn-sm btn-outline-light" onclick="cancelFileUpload()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div id="file-previews" class="d-flex gap-2 flex-wrap"></div>
+                    </div>
+
+                    <!-- Camera Preview -->
+                    <div id="camera-preview" class="d-none border-top bg-secondary p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0"><i class="fas fa-camera me-2"></i>Camera</h6>
+                            <button class="btn btn-sm btn-outline-light" onclick="closeCameraPreview()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="text-center">
+                            <video id="camera-video" width="300" height="225" autoplay class="rounded mb-2" style="display: none;"></video>
+                            <canvas id="camera-canvas" width="300" height="225" class="rounded mb-2" style="display: none;"></canvas>
+                            <div class="d-flex justify-content-center gap-2">
+                                <button id="start-camera" class="btn btn-primary">
+                                    <i class="fas fa-video me-1"></i>Start Camera
+                                </button>
+                                <button id="capture-photo" class="btn btn-success d-none">
+                                    <i class="fas fa-camera me-1"></i>Capture
+                                </button>
+                                <button id="retake-photo" class="btn btn-warning d-none">
+                                    <i class="fas fa-redo me-1"></i>Retake
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="card-footer bg-dark border-top p-3">
+                        <div class="input-group">
+                            <!-- File Upload Button -->
+                            <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('file-input').click()">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            
+                            <!-- Camera Button -->
+                            <button class="btn btn-outline-secondary" type="button" onclick="toggleCameraPreview()">
+                                <i class="fas fa-camera"></i>
+                            </button>
+
+                            <!-- Voice Button -->
+                            <button id="voice-toggle" class="btn btn-outline-primary" type="button">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+
+                            <!-- Text AI Button -->
+                            <button id="text-ai-toggle" class="btn btn-outline-success" type="button" onclick="openTextAIModal()">
+                                <i class="fas fa-pen-fancy"></i>
+                            </button>
+
+                            <!-- Text Input -->
+                            <input type="text" id="message-input" class="form-control bg-dark text-light border-secondary" 
+                                   placeholder="Type your message or use voice/camera/AI writer..." 
+                                   onkeypress="handleEnterKey(event)">
+
+                            <!-- Send Button -->
+                            <button class="btn btn-primary" type="button" onclick="sendMessage()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Hidden File Input -->
+                        <input type="file" id="file-input" multiple 
+                               accept=".pdf,.doc,.docx,.txt,.xlsx,.xls,.csv,.zip,.jpg,.jpeg,.png,.gif,.mp4,.avi,.mov"
+                               onchange="handleFileUpload(event)" style="display: none;">
+                        
+                        <!-- Status Indicators -->
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <div id="typing-indicator" class="d-none text-primary">
+                                <i class="fas fa-spinner fa-spin me-1"></i>
+                                <small>AI is thinking...</small>
+                            </div>
+                            <div id="voice-status" class="d-none text-success">
+                                <i class="fas fa-microphone me-1"></i>
+                                <small>Listening...</small>
+                            </div>
+                            <div class="ms-auto">
+                                <small class="text-muted">Powered by multiple AI providers</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Text AI Modal -->
+<div class="modal fade" id="textAIModal" tabindex="-1" aria-labelledby="textAIModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title" id="textAIModalLabel">
+                    <i class="fas fa-pen-fancy me-2"></i>AI Text Generator
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="ai-content-type" class="form-label">Content Type</label>
+                            <select id="ai-content-type" class="form-select bg-dark text-light border-secondary">
+                                <option value="social_post">Social Media Post</option>
+                                <option value="blog_article">Blog Article</option>
+                                <option value="email_reply">Email Reply</option>
+                                <option value="product_description">Product Description</option>
+                                <option value="news_article">News Article</option>
+                                <option value="creative_story">Creative Story</option>
+                                <option value="tutorial">Tutorial</option>
+                                <option value="review">Review</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="ai-language" class="form-label">Language</label>
+                            <select id="ai-language" class="form-select bg-dark text-light border-secondary">
+                                <option value="english">English</option>
+                                <option value="urdu">اردو (Urdu)</option>
+                                <option value="arabic">العربية (Arabic)</option>
+                                <option value="hindi">हिंदी (Hindi)</option>
+                                <option value="spanish">Español (Spanish)</option>
+                                <option value="french">Français (French)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="ai-tone" class="form-label">Tone</label>
+                            <select id="ai-tone" class="form-select bg-dark text-light border-secondary">
+                                <option value="friendly">Friendly</option>
+                                <option value="professional">Professional</option>
+                                <option value="casual">Casual</option>
+                                <option value="formal">Formal</option>
+                                <option value="enthusiastic">Enthusiastic</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="ai-word-count" class="form-label">Word Count</label>
+                            <input type="number" id="ai-word-count" class="form-control bg-dark text-light border-secondary" 
+                                   value="200" min="50" max="2000">
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="ai-add-hashtags">
+                                <label class="form-check-label" for="ai-add-hashtags">
+                                    Add Hashtags
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="ai-seo-optimize">
+                                <label class="form-check-label" for="ai-seo-optimize">
+                                    SEO Optimize
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="ai-topic" class="form-label">Topic/Prompt</label>
+                    <textarea id="ai-topic" class="form-control bg-dark text-light border-secondary" 
+                              rows="3" placeholder="Enter your topic or detailed prompt here..."></textarea>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div id="ai-generation-status" class="text-muted"></div>
+                    <button id="generate-ai-content" class="btn btn-success" onclick="generateAIContent()">
+                        <i class="fas fa-magic me-1"></i>Generate Content
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.message-bubble {
+    max-width: 80%;
+    margin-bottom: 1rem;
+    animation: fadeInUp 0.3s ease;
+}
+
+.user-message {
+    margin-left: auto;
+}
+
+.user-message .message-content {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border-radius: 18px 18px 5px 18px;
+    padding: 12px 16px;
+}
+
+.assistant-message .message-content {
+    background: #343a40;
+    color: #f8f9fa;
+    border: 1px solid #495057;
+    border-radius: 18px 18px 18px 5px;
+    padding: 12px 16px;
+}
+
+.message-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.message-text {
+    line-height: 1.4;
+}
+
+.message-attachments {
+    margin-top: 10px;
+}
+
+.file-preview {
+    display: inline-block;
+    margin: 5px;
+    padding: 8px 12px;
+    background: #495057;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.file-preview i {
+    margin-right: 5px;
+}
+
+.image-preview {
+    max-width: 300px;
+    border-radius: 8px;
+    margin: 5px 0;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.voice-indicator-active {
+    animation: pulse 1.5s infinite;
+    color: #dc3545 !important;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+#chat-messages {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+#chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+#chat-messages::-webkit-scrollbar-track {
+    background: #343a40;
+}
+
+#chat-messages::-webkit-scrollbar-thumb {
+    background: #6c757d;
+    border-radius: 3px;
+}
+</style>
+
+<script>
+let isListening = false;
+let recognition = null;
+let attachedFiles = [];
+let cameraStream = null;
+let capturedImage = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeChat();
+    initializeVoiceRecognition();
+    setWelcomeTime();
+});
+
+function initializeChat() {
+    // Load chat history from localStorage if available
+    const savedChat = localStorage.getItem('aiChatHistory');
+    if (savedChat) {
+        try {
+            const messages = JSON.parse(savedChat);
+            messages.forEach(message => {
+                if (message.type !== 'welcome') {
+                    addMessageToChat(message.sender, message.content, message.timestamp, message.attachments);
+                }
+            });
+        } catch (e) {
+            console.error('Error loading chat history:', e);
+        }
+    }
+}
+
+function setWelcomeTime() {
+    const now = new Date();
+    document.getElementById('welcome-time').textContent = now.toLocaleTimeString();
+}
+
+function initializeVoiceRecognition() {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US'; // Will be auto-detected later
+        
+        recognition.onstart = function() {
+            document.getElementById('voice-status').classList.remove('d-none');
+            document.getElementById('voice-toggle').innerHTML = '<i class="fas fa-stop voice-indicator-active"></i>';
+        };
+        
+        recognition.onresult = function(event) {
+            let finalTranscript = '';
+            let interimTranscript = '';
+            
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript;
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+            
+            if (finalTranscript) {
+                document.getElementById('message-input').value = finalTranscript;
+                sendMessage();
+            }
+        };
+        
+        recognition.onerror = function(event) {
+            console.error('Speech recognition error:', event.error);
+            stopListening();
+        };
+        
+        recognition.onend = function() {
+            stopListening();
+        };
+        
+        // Voice toggle button
+        document.getElementById('voice-toggle').addEventListener('click', function() {
+            if (isListening) {
+                stopListening();
+            } else {
+                startListening();
+            }
+        });
+    }
+}
+
+function startListening() {
+    if (recognition && !isListening) {
+        isListening = true;
+        recognition.start();
+    }
+}
+
+function stopListening() {
+    if (recognition && isListening) {
+        isListening = false;
+        recognition.stop();
+        document.getElementById('voice-status').classList.add('d-none');
+        document.getElementById('voice-toggle').innerHTML = '<i class="fas fa-microphone"></i>';
+    }
+}
+
+function handleEnterKey(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+    }
+}
+
+async function sendMessage() {
+    const messageInput = document.getElementById('message-input');
+    const message = messageInput.value.trim();
+    
+    if (!message && attachedFiles.length === 0 && !capturedImage) {
+        return;
+    }
+    
+    // Add user message to chat
+    const userMessage = {
+        sender: 'user',
+        content: message || 'File attachment',
+        timestamp: new Date(),
+        attachments: [...attachedFiles]
+    };
+    
+    if (capturedImage) {
+        userMessage.attachments.push({
+            type: 'camera_capture',
+            name: 'Camera Capture',
+            data: capturedImage
+        });
+    }
+    
+    addMessageToChat('user', userMessage.content, userMessage.timestamp, userMessage.attachments);
+    
+    // Clear input and attachments
+    messageInput.value = '';
+    attachedFiles = [];
+    capturedImage = null;
+    document.getElementById('file-upload-area').classList.add('d-none');
+    closeCameraPreview();
+    
+    // Show typing indicator
+    document.getElementById('typing-indicator').classList.remove('d-none');
+    
+    try {
+        // Send message to backend
+        const formData = new FormData();
+        formData.append('message', message);
+        formData.append('attachments', JSON.stringify(userMessage.attachments.map(f => ({
+            name: f.name,
+            type: f.type,
+            size: f.size
+        }))));
+        
+        // Add file data
+        userMessage.attachments.forEach((file, index) => {
+            if (file.data && file.type !== 'camera_capture') {
+                formData.append(`file_${index}`, file.data, file.name);
+            } else if (file.type === 'camera_capture') {
+                formData.append('camera_capture', file.data);
+            }
+        });
+        
+        const response = await fetch('/api/chat-message', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        // Hide typing indicator
+        document.getElementById('typing-indicator').classList.add('d-none');
+        
+        if (result.success) {
+            // Add AI response to chat
+            addMessageToChat('assistant', result.response, new Date(), result.attachments);
+            
+            // Speak response if voice was used
+            if (isListening) {
+                speakResponse(result.response);
+            }
+        } else {
+            addMessageToChat('assistant', `Sorry, I encountered an error: ${result.error}`, new Date());
+        }
+        
+        // Save chat history
+        saveChatHistory();
+        
+    } catch (error) {
+        console.error('Error sending message:', error);
+        document.getElementById('typing-indicator').classList.add('d-none');
+        addMessageToChat('assistant', 'Sorry, I encountered a network error. Please try again.', new Date());
+    }
+}
+
+function addMessageToChat(sender, content, timestamp, attachments = []) {
+    const messagesContainer = document.getElementById('chat-messages');
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message-bubble ${sender}-message`;
+    
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    
+    const messageHeader = document.createElement('div');
+    messageHeader.className = 'message-header';
+    
+    if (sender === 'user') {
+        messageHeader.innerHTML = `
+            <i class="fas fa-user me-2"></i>
+            <strong>You</strong>
+            <small class="text-muted ms-auto">${timestamp.toLocaleTimeString()}</small>
+        `;
+    } else {
+        messageHeader.innerHTML = `
+            <i class="fas fa-robot me-2"></i>
+            <strong>AI Assistant</strong>
+            <small class="text-muted ms-auto">${timestamp.toLocaleTimeString()}</small>
+        `;
+    }
+    
+    const messageText = document.createElement('div');
+    messageText.className = 'message-text';
+    messageText.innerHTML = formatMessage(content);
+    
+    messageContent.appendChild(messageHeader);
+    messageContent.appendChild(messageText);
+    
+    // Add attachments
+    if (attachments && attachments.length > 0) {
+        const attachmentsDiv = document.createElement('div');
+        attachmentsDiv.className = 'message-attachments';
+        
+        attachments.forEach(attachment => {
+            const attachmentElement = createAttachmentElement(attachment);
+            attachmentsDiv.appendChild(attachmentElement);
+        });
+        
+        messageContent.appendChild(attachmentsDiv);
+    }
+    
+    messageDiv.appendChild(messageContent);
+    messagesContainer.appendChild(messageDiv);
+    
+    // Scroll to bottom
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function formatMessage(text) {
+    // Convert URLs to links
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    text = text.replace(urlRegex, '<a href="$1" target="_blank">$1</a>');
+    
+    // Convert newlines to <br>
+    text = text.replace(/\n/g, '<br>');
+    
+    return text;
+}
+
+function createAttachmentElement(attachment) {
+    const element = document.createElement('div');
+    
+    if (attachment.type === 'image' || attachment.type === 'camera_capture') {
+        element.innerHTML = `
+            <img src="${attachment.url || attachment.data}" class="image-preview" alt="${attachment.name}">
+            <br><small class="text-muted">${attachment.name}</small>
+        `;
+    } else {
+        const icon = getFileIcon(attachment.type || attachment.name);
+        element.className = 'file-preview';
+        element.innerHTML = `
+            <i class="${icon}"></i>
+            ${attachment.name}
+            <small class="text-muted">(${formatFileSize(attachment.size)})</small>
+        `;
+    }
+    
+    return element;
+}
+
+function getFileIcon(fileType) {
+    const icons = {
+        'pdf': 'fas fa-file-pdf text-danger',
+        'doc': 'fas fa-file-word text-primary',
+        'docx': 'fas fa-file-word text-primary',
+        'xls': 'fas fa-file-excel text-success',
+        'xlsx': 'fas fa-file-excel text-success',
+        'zip': 'fas fa-file-archive text-warning',
+        'image': 'fas fa-file-image text-info',
+        'video': 'fas fa-file-video text-purple'
+    };
+    
+    const extension = fileType.split('.').pop()?.toLowerCase();
+    return icons[extension] || icons[fileType] || 'fas fa-file text-muted';
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function handleFileUpload(event) {
+    const files = Array.from(event.target.files);
+    
+    files.forEach(file => {
+        if (file.size > 50 * 1024 * 1024) { // 50MB limit
+            alert(`File ${file.name} is too large. Maximum size is 50MB.`);
+            return;
+        }
+        
+        attachedFiles.push({
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            data: file
+        });
+    });
+    
+    if (attachedFiles.length > 0) {
+        showFilePreview();
+    }
+    
+    // Reset file input
+    event.target.value = '';
+}
+
+function showFilePreview() {
+    const previewArea = document.getElementById('file-upload-area');
+    const previewsContainer = document.getElementById('file-previews');
+    
+    previewsContainer.innerHTML = '';
+    
+    attachedFiles.forEach((file, index) => {
+        const preview = document.createElement('div');
+        preview.className = 'file-preview d-flex align-items-center';
+        
+        const icon = getFileIcon(file.type || file.name);
+        preview.innerHTML = `
+            <i class="${icon} me-2"></i>
+            <span class="me-2">${file.name}</span>
+            <small class="text-muted me-2">(${formatFileSize(file.size)})</small>
+            <button class="btn btn-sm btn-outline-danger" onclick="removeFile(${index})">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        previewsContainer.appendChild(preview);
+    });
+    
+    previewArea.classList.remove('d-none');
+}
+
+function removeFile(index) {
+    attachedFiles.splice(index, 1);
+    if (attachedFiles.length === 0) {
+        document.getElementById('file-upload-area').classList.add('d-none');
+    } else {
+        showFilePreview();
+    }
+}
+
+function cancelFileUpload() {
+    attachedFiles = [];
+    document.getElementById('file-upload-area').classList.add('d-none');
+}
+
+// Camera functions
+function toggleCameraPreview() {
+    const cameraPreview = document.getElementById('camera-preview');
+    if (cameraPreview.classList.contains('d-none')) {
+        cameraPreview.classList.remove('d-none');
+    } else {
+        closeCameraPreview();
+    }
+}
+
+function closeCameraPreview() {
+    document.getElementById('camera-preview').classList.add('d-none');
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+    document.getElementById('camera-video').style.display = 'none';
+    document.getElementById('camera-canvas').style.display = 'none';
+    document.getElementById('start-camera').classList.remove('d-none');
+    document.getElementById('capture-photo').classList.add('d-none');
+    document.getElementById('retake-photo').classList.add('d-none');
+}
+
+document.getElementById('start-camera').addEventListener('click', async function() {
+    try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const video = document.getElementById('camera-video');
+        video.srcObject = cameraStream;
+        video.style.display = 'block';
+        
+        document.getElementById('start-camera').classList.add('d-none');
+        document.getElementById('capture-photo').classList.remove('d-none');
+    } catch (error) {
+        console.error('Error accessing camera:', error);
+        alert('Could not access camera. Please check permissions.');
+    }
+});
+
+document.getElementById('capture-photo').addEventListener('click', function() {
+    const video = document.getElementById('camera-video');
+    const canvas = document.getElementById('camera-canvas');
+    const context = canvas.getContext('2d');
+    
+    // Draw current frame to canvas
+    context.drawImage(video, 0, 0, 300, 225);
+    
+    // Convert to base64
+    capturedImage = canvas.toDataURL('image/jpeg');
+    
+    // Show captured image
+    canvas.style.display = 'block';
+    video.style.display = 'none';
+    
+    // Update buttons
+    document.getElementById('capture-photo').classList.add('d-none');
+    document.getElementById('retake-photo').classList.remove('d-none');
+    
+    // Stop camera stream
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+});
+
+document.getElementById('retake-photo').addEventListener('click', function() {
+    capturedImage = null;
+    document.getElementById('camera-canvas').style.display = 'none';
+    document.getElementById('retake-photo').classList.add('d-none');
+    document.getElementById('start-camera').classList.remove('d-none');
+});
+
+function speakResponse(text) {
+    // Use browser's speech synthesis
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.8;
+        utterance.pitch = 1;
+        speechSynthesis.speak(utterance);
+    }
+}
+
+function clearChat() {
+    if (confirm('Are you sure you want to clear the chat history?')) {
+        const messagesContainer = document.getElementById('chat-messages');
+        messagesContainer.innerHTML = `
+            <div class="message-bubble assistant-message">
+                <div class="message-content">
+                    <div class="message-header">
+                        <i class="fas fa-robot me-2"></i>
+                        <strong>AI Assistant</strong>
+                        <small class="text-muted ms-auto" id="welcome-time"></small>
+                    </div>
+                    <div class="message-text">
+                        <p>Chat cleared. How can I help you today?</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        setWelcomeTime();
+        localStorage.removeItem('aiChatHistory');
+    }
+}
+
+function saveChatHistory() {
+    const messages = [];
+    const messageElements = document.querySelectorAll('.message-bubble');
+    
+    messageElements.forEach(element => {
+        const isUser = element.classList.contains('user-message');
+        const content = element.querySelector('.message-text').textContent;
+        const timeText = element.querySelector('.message-header small').textContent;
+        
+        messages.push({
+            sender: isUser ? 'user' : 'assistant',
+            content: content,
+            timestamp: timeText,
+            type: 'message'
+        });
+    });
+    
+    localStorage.setItem('aiChatHistory', JSON.stringify(messages.slice(-50))); // Keep last 50 messages
+}
+
+// Text AI Modal Functions
+function openTextAIModal() {
+    const modal = new bootstrap.Modal(document.getElementById('textAIModal'));
+    modal.show();
+}
+
+async function generateAIContent() {
+    const contentType = document.getElementById('ai-content-type').value;
+    const language = document.getElementById('ai-language').value;
+    const tone = document.getElementById('ai-tone').value;
+    const wordCount = document.getElementById('ai-word-count').value;
+    const addHashtags = document.getElementById('ai-add-hashtags').checked;
+    const seoOptimize = document.getElementById('ai-seo-optimize').checked;
+    const topic = document.getElementById('ai-topic').value.trim();
+    
+    if (!topic) {
+        alert('Please enter a topic or prompt!');
+        return;
+    }
+    
+    // Show generating status
+    const statusEl = document.getElementById('ai-generation-status');
+    const generateBtn = document.getElementById('generate-ai-content');
+    
+    statusEl.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generating content...';
+    generateBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/api/generate-text-ai', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                content_type: contentType,
+                language: language,
+                tone: tone,
+                word_count: parseInt(wordCount),
+                add_hashtags: addHashtags,
+                seo_optimize: seoOptimize,
+                prompt: topic
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('textAIModal')).hide();
+            
+            // Add generated content to chat
+            const generatedMessage = `**AI Generated ${contentType.replace('_', ' ').toUpperCase()}:**\n\n${result.content}`;
+            addMessageToChat('assistant', generatedMessage, new Date());
+            
+            // Clear form
+            document.getElementById('ai-topic').value = '';
+            
+            // Save to chat history
+            saveChatHistory();
+            
+        } else {
+            statusEl.innerHTML = `<span class="text-danger">Error: ${result.error}</span>`;
+        }
+        
+    } catch (error) {
+        console.error('Error generating AI content:', error);
+        statusEl.innerHTML = '<span class="text-danger">Network error. Please try again.</span>';
+    } finally {
+        generateBtn.disabled = false;
+        setTimeout(() => {
+            statusEl.innerHTML = '';
+        }, 3000);
+    }
+}
+</script>
+{% endblock %}

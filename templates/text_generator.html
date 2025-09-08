@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+
+{% block title %}Text AI Generator{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">🤖 AI Text Generator</h1>
+            <p class="lead">Generate natural, human-like content for posts, articles, blogs, and more!</p>
+        </div>
+    </div>
+
+    <!-- AI Provider Status -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark border-secondary">
+                <div class="card-body">
+                    <h5 class="card-title">AI Provider Status</h5>
+                    <div id="provider-status" class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-secondary">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Text Generation Form -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header">
+                    <h5 class="mb-0">Content Generator</h5>
+                </div>
+                <div class="card-body">
+                    <form id="text-generation-form">
+                        <div class="mb-3">
+                            <label for="content-type" class="form-label">Content Type</label>
+                            <select class="form-select bg-dark text-light border-secondary" id="content-type" required>
+                                <option value="">Select content type...</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="topic" class="form-label">Topic/Subject</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" 
+                                   id="topic" placeholder="What should I write about?" required>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="tone" class="form-label">Writing Tone</label>
+                                <select class="form-select bg-dark text-light border-secondary" id="tone">
+                                    <option value="friendly">Friendly</option>
+                                    <option value="professional">Professional</option>
+                                    <option value="casual">Casual</option>
+                                    <option value="formal">Formal</option>
+                                    <option value="enthusiastic">Enthusiastic</option>
+                                    <option value="informative">Informative</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="language" class="form-label">Language</label>
+                                <select class="form-select bg-dark text-light border-secondary" id="language">
+                                    <option value="english">English</option>
+                                    <option value="urdu">Urdu</option>
+                                    <option value="arabic">Arabic</option>
+                                    <option value="hindi">Hindi</option>
+                                    <option value="spanish">Spanish</option>
+                                    <option value="french">French</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="custom-instructions" class="form-label">Additional Instructions (Optional)</label>
+                            <textarea class="form-control bg-dark text-light border-secondary" 
+                                      id="custom-instructions" rows="3" 
+                                      placeholder="Any specific requirements or style preferences..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100" id="generate-btn">
+                            <i class="fas fa-magic me-2"></i>Generate Content
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Generated Content</h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary me-2" id="copy-btn" style="display: none;">
+                            <i class="fas fa-copy me-1"></i>Copy
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" id="save-btn" style="display: none;">
+                            <i class="fas fa-save me-1"></i>Save
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="generation-status" class="text-center text-muted">
+                        <i class="fas fa-lightbulb fa-3x mb-3"></i>
+                        <p>Fill out the form and click "Generate Content" to create amazing content!</p>
+                    </div>
+                    
+                    <div id="generated-content" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label">Generated Text</label>
+                            <textarea class="form-control bg-dark text-light border-secondary" 
+                                      id="content-output" rows="12" readonly></textarea>
+                        </div>
+                        
+                        <div id="hashtags-section" style="display: none;">
+                            <label class="form-label">Suggested Hashtags</label>
+                            <div id="hashtags-output" class="d-flex flex-wrap gap-1 mb-3"></div>
+                        </div>
+                        
+                        <div id="content-stats" class="small text-muted">
+                            <span id="word-count">0 words</span> • 
+                            <span id="char-count">0 characters</span> • 
+                            <span id="provider-used">Provider: Unknown</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Generations -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Generations</h5>
+                </div>
+                <div class="card-body">
+                    <div id="recent-generations" class="row">
+                        <div class="col-12 text-center text-muted">
+                            <p>Your recent content generations will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let recentGenerations = JSON.parse(localStorage.getItem('recentGenerations') || '[]');
+    
+    // Load content types
+    loadContentTypes();
+    
+    // Load AI provider status
+    loadProviderStatus();
+    
+    // Load recent generations
+    displayRecentGenerations();
+    
+    // Form submission
+    document.getElementById('text-generation-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        generateContent();
+    });
+    
+    // Copy button
+    document.getElementById('copy-btn').addEventListener('click', function() {
+        const content = document.getElementById('content-output').value;
+        navigator.clipboard.writeText(content).then(() => {
+            showNotification('Content copied to clipboard!', 'success');
+        });
+    });
+    
+    // Save button
+    document.getElementById('save-btn').addEventListener('click', function() {
+        saveGeneration();
+    });
+
+    async function loadContentTypes() {
+        try {
+            const response = await fetch('/api/content-types');
+            const data = await response.json();
+            
+            if (data.success) {
+                const select = document.getElementById('content-type');
+                select.innerHTML = '<option value="">Select content type...</option>';
+                
+                data.content_types.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type.type;
+                    option.textContent = `${type.name} (max ${type.max_length} chars)`;
+                    select.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('Error loading content types:', error);
+        }
+    }
+
+    async function loadProviderStatus() {
+        try {
+            const response = await fetch('/api/ai-provider-status');
+            const data = await response.json();
+            
+            if (data.success) {
+                const statusDiv = document.getElementById('provider-status');
+                statusDiv.innerHTML = '';
+                
+                Object.entries(data.providers).forEach(([provider, available]) => {
+                    const badge = document.createElement('span');
+                    badge.className = `badge ${available ? 'bg-success' : 'bg-danger'}`;
+                    badge.innerHTML = `<i class="fas ${available ? 'fa-check' : 'fa-times'} me-1"></i>${provider.toUpperCase()}`;
+                    statusDiv.appendChild(badge);
+                });
+            }
+        } catch (error) {
+            console.error('Error loading provider status:', error);
+        }
+    }
+
+    async function generateContent() {
+        const form = document.getElementById('text-generation-form');
+        const formData = new FormData(form);
+        const generateBtn = document.getElementById('generate-btn');
+        
+        // Show loading state
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
+        
+        const statusDiv = document.getElementById('generation-status');
+        statusDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x mb-3"></i><p>AI is generating your content...</p></div>';
+        
+        try {
+            const response = await fetch('/api/generate-text', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    content_type: document.getElementById('content-type').value,
+                    topic: document.getElementById('topic').value,
+                    tone: document.getElementById('tone').value,
+                    language: document.getElementById('language').value,
+                    custom_instructions: document.getElementById('custom-instructions').value
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                displayGeneratedContent(data);
+                showNotification('Content generated successfully!', 'success');
+            } else {
+                statusDiv.innerHTML = `<div class="text-center text-danger"><i class="fas fa-exclamation-triangle fa-2x mb-3"></i><p>Error: ${data.error}</p></div>`;
+                showNotification('Failed to generate content', 'error');
+            }
+        } catch (error) {
+            console.error('Error generating content:', error);
+            statusDiv.innerHTML = '<div class="text-center text-danger"><i class="fas fa-exclamation-triangle fa-2x mb-3"></i><p>Network error occurred</p></div>';
+            showNotification('Network error occurred', 'error');
+        } finally {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="fas fa-magic me-2"></i>Generate Content';
+        }
+    }
+
+    function displayGeneratedContent(data) {
+        // Hide status and show content
+        document.getElementById('generation-status').style.display = 'none';
+        document.getElementById('generated-content').style.display = 'block';
+        document.getElementById('copy-btn').style.display = 'inline-block';
+        document.getElementById('save-btn').style.display = 'inline-block';
+        
+        // Set content
+        document.getElementById('content-output').value = data.content;
+        
+        // Display hashtags if available
+        if (data.hashtags && data.hashtags.length > 0) {
+            const hashtagsDiv = document.getElementById('hashtags-output');
+            hashtagsDiv.innerHTML = '';
+            
+            data.hashtags.forEach(hashtag => {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-primary';
+                badge.textContent = hashtag;
+                hashtagsDiv.appendChild(badge);
+            });
+            
+            document.getElementById('hashtags-section').style.display = 'block';
+        } else {
+            document.getElementById('hashtags-section').style.display = 'none';
+        }
+        
+        // Update stats
+        document.getElementById('word-count').textContent = `${data.word_count || 0} words`;
+        document.getElementById('char-count').textContent = `${data.content.length} characters`;
+        document.getElementById('provider-used').textContent = `Provider: ${data.provider.toUpperCase()}`;
+    }
+
+    function saveGeneration() {
+        const content = document.getElementById('content-output').value;
+        const hashtags = Array.from(document.querySelectorAll('#hashtags-output .badge')).map(badge => badge.textContent);
+        
+        const generation = {
+            id: Date.now(),
+            content: content,
+            hashtags: hashtags,
+            content_type: document.getElementById('content-type').value,
+            topic: document.getElementById('topic').value,
+            tone: document.getElementById('tone').value,
+            language: document.getElementById('language').value,
+            timestamp: new Date().toISOString()
+        };
+        
+        recentGenerations.unshift(generation);
+        recentGenerations = recentGenerations.slice(0, 10); // Keep only last 10
+        
+        localStorage.setItem('recentGenerations', JSON.stringify(recentGenerations));
+        displayRecentGenerations();
+        
+        showNotification('Generation saved successfully!', 'success');
+    }
+
+    function displayRecentGenerations() {
+        const container = document.getElementById('recent-generations');
+        
+        if (recentGenerations.length === 0) {
+            container.innerHTML = '<div class="col-12 text-center text-muted"><p>Your recent content generations will appear here</p></div>';
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        recentGenerations.slice(0, 6).forEach(generation => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4 mb-3';
+            
+            col.innerHTML = `
+                <div class="card bg-secondary border-dark h-100">
+                    <div class="card-body">
+                        <h6 class="card-title">${generation.content_type.replace('_', ' ').toUpperCase()}</h6>
+                        <p class="card-text small">${generation.topic}</p>
+                        <p class="card-text">${generation.content.substring(0, 100)}...</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">${new Date(generation.timestamp).toLocaleDateString()}</small>
+                            <button class="btn btn-sm btn-outline-primary" onclick="loadGeneration(${generation.id})">Load</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(col);
+        });
+    }
+
+    window.loadGeneration = function(id) {
+        const generation = recentGenerations.find(g => g.id === id);
+        if (generation) {
+            document.getElementById('content-type').value = generation.content_type;
+            document.getElementById('topic').value = generation.topic;
+            document.getElementById('tone').value = generation.tone;
+            document.getElementById('language').value = generation.language;
+            document.getElementById('content-output').value = generation.content;
+            
+            // Show content section
+            document.getElementById('generation-status').style.display = 'none';
+            document.getElementById('generated-content').style.display = 'block';
+            document.getElementById('copy-btn').style.display = 'inline-block';
+            document.getElementById('save-btn').style.display = 'inline-block';
+            
+            // Display hashtags
+            if (generation.hashtags && generation.hashtags.length > 0) {
+                const hashtagsDiv = document.getElementById('hashtags-output');
+                hashtagsDiv.innerHTML = '';
+                
+                generation.hashtags.forEach(hashtag => {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge bg-primary';
+                    badge.textContent = hashtag;
+                    hashtagsDiv.appendChild(badge);
+                });
+                
+                document.getElementById('hashtags-section').style.display = 'block';
+            }
+            
+            showNotification('Generation loaded successfully!', 'success');
+        }
+    };
+
+    function showNotification(message, type) {
+        // Simple notification system
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}
