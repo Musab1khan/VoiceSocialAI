@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import requests
-from google import genai
+import google.generativeai as genai
 from google.genai import types
 from pydantic import BaseModel
 import base64
