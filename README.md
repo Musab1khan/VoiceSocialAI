@@ -1,22 +1,22 @@
-# 🤖 AI Voice Assistant
+#  AI Voice Assistant
 
 A comprehensive Flask-based AI Voice Assistant that provides voice command processing, social media automation, and auto-reply functionality. The system integrates multiple AI services including Google's Gemini AI, Facebook Graph API, Gmail API, and WhatsApp Business API.
 
-## ✨ Features
+##  Features
 
-- 🎤 **Voice Recognition**: Browser-based speech recognition for natural voice commands
-- 🔊 **Text-to-Speech**: Audio responses using pyttsx3 with customizable voices
-- 🤖 **AI Integration**: Multiple AI services (Gemini, OpenAI, Hugging Face, AI/ML API) for intelligent responses
-- ✍️ **Advanced Text AI**: Natural human-like content generation for posts, articles, blogs, emails, stories, and more
-- 📱 **Social Media Automation**: Automated Facebook posting with AI-generated content
-- 📧 **Email Auto-Reply**: Gmail integration with intelligent auto-responses
-- 💬 **WhatsApp Integration**: Business API integration for messaging
-- 🖼️ **Image Generation**: AI-powered image creation and sharing
-- 🔖 **Smart Hashtags**: Automatic hashtag generation and SEO optimization
-- 📊 **Dashboard**: Real-time monitoring of activities and system status
-- 🔧 **Settings Panel**: Easy API key management and configuration
+-  **Voice Recognition**: Browser-based speech recognition for natural voice commands
+-  **Text-to-Speech**: Audio responses using pyttsx3 with customizable voices
+-  **AI Integration**: Multiple AI services (Gemini, OpenAI, Hugging Face, AI/ML API) for intelligent responses
+-  **Advanced Text AI**: Natural human-like content generation for posts, articles, blogs, emails, stories, and more
+-  **Social Media Automation**: Automated Facebook posting with AI-generated content
+-  **Email Auto-Reply**: Gmail integration with intelligent auto-responses
+-  **WhatsApp Integration**: Business API integration for messaging
+-  **Image Generation**: AI-powered image creation and sharing
+-  **Smart Hashtags**: Automatic hashtag generation and SEO optimization
+-  **Dashboard**: Real-time monitoring of activities and system status
+-  **Settings Panel**: Easy API key management and configuration
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 
@@ -28,8 +28,8 @@ A comprehensive Flask-based AI Voice Assistant that provides voice command proce
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-repository-url>
-cd ai-voice-assistant
+git clone https://github.com/Musab1khan/VoiceSocialAI.git
+cd VoiceSocialAI
 ```
 
 ### 2. Install Python Dependencies
